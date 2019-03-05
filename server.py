@@ -108,7 +108,7 @@ def world():
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    response = app.response_class(response=json.dumps(myWorld.get(entity), status=200, mimetype="application/json"))
+    response = app.response_class(response=json.dumps(myWorld.get(entity)))
     return response
 
 @app.route("/clear", methods=['POST','GET'])
