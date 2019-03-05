@@ -59,6 +59,7 @@ class World:
 
 myWorld = World()          
 
+
 # I give this to you, this is how you get the raw body/data portion of a post in flask
 # this should come with flask but whatever, it's not my project.
 def flask_post_json():
@@ -71,30 +72,51 @@ def flask_post_json():
     else:
         return json.loads(request.form.keys()[0])
 
+# So we must figure out how to send a flask response
+# Redirect is easy enough, but we also need to do some stuff more complicated
+
 @app.route("/")
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    # https://stackoverflow.com/questions/14343812/redirecting-to-url-in-flask
+    return flask.redirect("/static/index.html", 302)
 
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
+    # Get the entity from the dict? If it doesn't exist add it?
+    # Look at the curl and see how that works
     '''update the entities via this interface'''
-    return None
+
+    # Data is a dictionary with an x key,value and a y key,value
+    data = flask_post_json()
+    # print(data, entity)
+    
+    for key in data:
+        myWorld.update(entity, key, data[key])
+    
+    response = app.response_class(response=json.dumps(myWorld.get(entity)), status=200, mimetype="application/json")
+    return response
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    return None
+    # https://stackoverflow.com/questions/13081532/return-json-response-from-flask-view
+    response = app.response_class(response=json.dumps(myWorld.world()), status=200, mimetype="application/json")
+    return response
 
+# Is adding this methods part necessarry is by leaving it blank does it default to just "GET" ?
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
+    response = app.response_class(response=json.dumps(myWorld.get(entity), status=200, mimetype="application/json"))
+    return response
 
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    return None
+    myWorld.clear()
+
+    return world()
 
 if __name__ == "__main__":
     app.run()
