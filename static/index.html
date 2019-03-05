@@ -31,7 +31,7 @@ var context = canvas.getContext("2d");
 var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
 
-
+// So we don't have to use this, I can make a fetch function instead
 function sendJSONXMLHTTPRequest(url, objects, callback) {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function () {
@@ -52,6 +52,27 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
     // Remember to use application/json !
 }
 
+function getHTTP(url) {
+    var data = fetch(url);
+    data = data.then(function(response) {
+    return response.json();})
+    data = data.then(function(myJson){return JSON.stringify(myJson)})
+    console.log(data)
+    return data
+}
+
+
+// Lets see what this does
+// https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#Uploading_JSON_data
+function postHTTP(url, data) {
+    return fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: {"Content-Type":"application/json"}
+
+    }).then(res => res.json())
+// Is this enough or do I need another return or callback or something silly
+}
 
 world = {};
 
@@ -137,8 +158,9 @@ function getPosition(e) {
 function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just  modified!
-
+    //XXX: Send a XHTML Request that updates the entity you just modified!
+    let url = "127.0.0.1:5000/entity/" + entity
+    maybeResponse = postHTTP(url, data)
 }
 
 var counter = 0;
@@ -186,7 +208,7 @@ mouse = (function() {
                 var y = pos[1];
 	        self.clicked = 1;
                 self.callListeners(self.mousedowners,x,y,self.clicked,e);
-                //addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+                // addEntityWithoutName({'x':x,'y':y,'colour':'red'});
             }
         },
         mouseup: function(e) {
@@ -263,11 +285,14 @@ mouse.mousedraggers.push(function(x,y,clicked,e) {
 
 function update() {
     //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
+    let url = "http://127.0.0.1:5000/world"
+    world = getHTTP(url)
+    console.log(world)
     drawFrame();
 }
 
-// 30 frames per second
-setInterval( update, 1000/30.0);
+// 30 frames per second , add 0 for 30
+setInterval( update, 1000/3.0);
 
 
 
