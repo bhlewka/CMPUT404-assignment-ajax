@@ -32,45 +32,27 @@ var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
 
 // So we don't have to use this, I can make a fetch function instead
-function sendJSONXMLHTTPRequest(url, objects, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState==4) {
-            try {
-                if (xhr.status==200) {
-                    //XXX: parse some JSON from the request!
-                    //XXX: Pass the data to the callback!
-                }
-            } 
-            catch(e) {
-                alert('Error: ' + e.name);
-            }
-        }
-    };
-    //XXX: POST to a URL
-    //XXX: set the mimetype and the accept headers!
-    // Remember to use application/json !
-}
+// I am not using the provided XHR function, so I deleted it
 
+// this will return a promsise object for us to .then later on
+https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
 function getHTTP(url) {
-    var data = fetch(url);
-    data = data.then(function(response) {
-    return response.json();})
-    data = data.then(function(myJson){return JSON.stringify(myJson)})
-    console.log(data)
-    return data
+    return fetch(url, {headers:{"Access-Control-Allow-Origin":"*"}}).then(function(response) {
+    return response.json();
+  })
 }
 
 
 // Lets see what this does
 // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#Uploading_JSON_data
 function postHTTP(url, data) {
+    // console.log(url, data);
     return fetch(url, {
         method: 'POST',
         body: JSON.stringify(data),
-        headers: {"Content-Type":"application/json"}
+        headers: {"Content-Type":"application/json", "Access-Control-Allow-Origin":"*"}
 
-    }).then(res => res.json())
+    }).then(response => response.json())
 // Is this enough or do I need another return or callback or something silly
 }
 
@@ -79,11 +61,20 @@ world = {};
 //XXX: TODO Make this prettier!
 function drawCircle(context,entity) {
     with(context) {
-        beginPath();              
-        lineWidth = 3;
+        beginPath();
+
+        // Lets make the circle grow and shrink
+        lineWidth = 100;
+        if (Math.random() > 0.5){
+            lineWidth++
+        }
+        else{
+            lineWidth--;
+        }
+
         var x = entity["x"];
         var y = entity["y"];
-        //moveTo(x,y);
+        // moveTo(x,y);
         fillStyle = entity["colour"];
         strokeStyle = fillStyle;
         arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
@@ -96,7 +87,7 @@ function prepEntity(entity) {
         entity["colour"] = "#FF0000";
     }
     if (!entity["radius"]) {
-        entity["radius"] = 50;
+        entity["radius"] = 10;
     }
     return entity;
 }
@@ -104,7 +95,7 @@ function prepEntity(entity) {
 function clearFrame() {
     with(context) {
 	moveTo(0,0);
-	fillStyle = "#000";
+	fillStyle = "#ffffff";
 	fillRect(0,0,W,H);
     }
 
@@ -157,15 +148,18 @@ function getPosition(e) {
 
 function addEntity(entity, data) {
     world[entity] = data;
+    //DONE: Send a XHTML Request that updates the entity you just modified!
+    let url = "http://" + window.location.host + "/entity/" + entity;
+    // console.log(url, data);
+    maybeResponse = postHTTP(url, data);
+    
     drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just modified!
-    let url = "127.0.0.1:5000/entity/" + entity
-    maybeResponse = postHTTP(url, data)
+
 }
 
 var counter = 0;
 function addEntityWithoutName(data) {
-    //var name = "X"+Math.floor((Math.random()*100)+1);
+    // var name = "X"+Math.floor((Math.random()*100)+1);
     var name = "X"+(counter++)%100;
     addEntity(name,data);
 }
@@ -270,29 +264,35 @@ mouse = (function() {
 //XXX: TODO Make these prettier!
 // Could do this by making the color random or something silly like that
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'#00ff48'});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'#e04a4a'});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    addEntityWithoutName({'x':x,'y':y,'colour':'#00e1ff',
+                          'radius':1});
 });
 
 
 function update() {
-    //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
-    let url = "http://127.0.0.1:5000/world"
-    world = getHTTP(url)
-    console.log(world)
+    //DONE: Get the world from the webservice using a XMLHTTPRequest
+    // Used fetch api instead
+    let url = "http://" + window.location.host + "/world";
+
+    // World is a promise object, we need to extract the data now
+    getHTTP(url).then(function(myJson){
+        world = myJson;
+    }) 
+
     drawFrame();
+    drawNextFrame();
 }
 
 // 30 frames per second , add 0 for 30
-setInterval( update, 1000/3.0);
+setInterval( update, 1000/30.0);
 
 
 
